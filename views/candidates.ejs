@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html ng-app="myApp">
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" href="/css/base.css"/>
+</head>
+<body>
+<div ng-controller="MyController as my">
+    <section class="view panel">
+        <h1>List of Candidates</h1>
+        <ul>
+            <li ng-repeat="c in my.candidates">
+                <div class="candidate-list">
+                   <input ng-show="!my.editing[$index]" type="text" disabled ng-model="c.name" />
+                  <!-- <input type="text" ng-model="c.email" />
+                   <input type="text" ng-model="c.college" />
+                   <input type="text" ng-model="c.grad"/>
+                   <button>edit</button>-->
+                   <button ng-show="!my.editing[$index]" ng-click="my.edit($index)">edit</button>
+                   <button ng-show="!my.editing[$index]" ng-click="my.remove($index)">remove</button>
+
+
+                   <input ng-show="my.editing[$index]" type="text" ng-model="c.name" />
+                   <button ng-show="my.editing[$index]" ng-click="my.update($index)">update</button>
+                   <button ng-show="my.editing[$index]" ng-click="my.cancel($index)">cancel</button>
+                </div>
+            </li>
+        </ul>
+    </section>
+    <section class="create panel">
+        <h1>Create Candidate</h1>
+        <input type="text" placeholder="Enter name ... " ng-model="my.candidate.name"/>
+        <input type="email" placeholder="Enter email ... " ng-model="my.candidate.email"/>
+        <input type="text" placeholder="Enter college ... " ng-model="my.candidate.college"/>
+        <input type="text" placeholder="Enter grad ... " ng-model="my.candidate.grad"/>
+        <button ng-click="my.create()">Add</button>
+    </section>
+</div>
+<script src="/angular/angular.js"></script>
+<script src="/angular-resource/angular-resource.js"></script>
+<script>
+    angular.module('myApp', ['ngResource'])
+            //--------------
+            // Controllers
+            //--------------
+            .controller('MyController', function ($scope, Candidate) {
+                var my = this;
+                my.editing = [];
+                my.candidate = new Candidate();
+                my.candidates = Candidate.query(function (candidates) {
+                    console.log(my.candidates);
+                });
+                my.create = function() {
+                    Candidate.save(my.candidate, function () {
+                        my.candidates.push(my.candidate);
+                        my.candidate = new Candidate();
+                    });
+                };
+                my.remove = function(index){
+                    var remove_candidate = my.candidates[index];
+                    console.log('Removing candidate with id: ' + remove_candidate._id);
+                    Candidate.remove({id:remove_candidate._id}, function(){
+                        my.candidates.splice(index, 1);
+                    });
+
+                };
+                my.update = function(index){
+                    var update_candidate = my.candidates[index];
+                    console.log('Updating candidate with id: ' + update_candidate._id);
+                    Candidate.update({id:update_candidate._id}, update_candidate);
+                    my.editing[index]= false;
+                };
+                my.edit = function(index){
+                   var edit_candidate = my.candidates[index];
+                   console.log('Editing candidate with id: ' + edit_candidate._id);
+                   my.editing[index] = angular.copy(my.candidates[index]);
+
+                };
+                my.cancel = function(index){
+                    my.candidates[index] = angular.copy(my.editing[index]);
+                    my.editing[index] = false;
+                }
+            })
+            //--------------
+            // Services
+            //--------------
+            .factory('Candidate', function($resource) {
+                return $resource('/candidates/:id', null, {
+                    'update': {method:'PUT'}
+                });
+            });
+</script>
+</body>
+</html>
